@@ -8,11 +8,16 @@ Obviously the Illustris data is huge, but most users will only want a fraction o
 This means you can download the data in manageable chunks with a reasonably fast internet connection, and start playing with them straight away.
 It builds on the excellent API tools created by the Illustris team (http://www.illustris-project.org/data/) but attempts to translate most tasks you might want to complete into simple commands.
 
-The data structure has similar names and organization to the raw illustris data detailed above (and I'll try and highlight where they differ)
+The data structure is as similar in organization and naming convention to the raw illustris data as I could manage. I'll try and point out where names differ. Here's a brief overview of that structure:
+
   there are numerous simulations
-    each has ~136 snapshots (some, e.g. a couple at ~z=1 in Illustris-1 are corrupted and thus left out)
+  
+    each has ~136 snapshots (some, e.g. a couple at ~z=1 in Illustris-1, are corrupted and thus left out)
+    
       the data in the snapshots are sorted into individual dark matter halos and subhalos (the latter is roughly synonomous with an individual galaxy)
+      
         each halo/subhalo has some bulk properties, like total stellar mass or mean gas metalicity
+        
           each halo/subhalo contains a whole bunch of particles (gas,DM,stars and BHs + more obscure things) and each particles has simple properties (like position, mass and velocity)
 
 Sometimes you may want to compare just bulk properties of galaxies (e.g. in the example notebook we recreate the M_BH, sigma relation)
@@ -42,7 +47,7 @@ An internet connection - I made and tested this package using the free municipal
 
 
 ______Basic commands:
-I'll outline the basic functionality of the commands below.
+I'll outline the basic functionality of the commands below. Note they all default to pulling from the main simulation at z=0 but will work for any simulation and snapshot.
   
   Object Data - the following commands gets a *dictionary* of data about a particular object: Simulations, Snapshots and Halos/Subhalos
   
@@ -60,8 +65,8 @@ I'll outline the basic functionality of the commands below.
   
     getGalaxy(whichGalaxy, fields, simulation='Illustris-1', snapshot=135)
     
-  And finally there's the get(path, ...) command. This is doing the actual pulling from online, you hopefully won't need to touch it
+  And finally there's the get(path, ...) command. This is doing the actual pulling from online, you hopefully won't need to touch it.
     
-_____Installation:
+______Installation:
       
 The install should be like any other python package, but just in case you're not sure how to do it (I always forget...) dowload it from here, store it wherever you want and add it to your PYTHONPATH (I always fall back on the 2nd comment on this thread - http://www.bdnyc.org/2012/09/editing-pythonpath-to-import-modules/)
