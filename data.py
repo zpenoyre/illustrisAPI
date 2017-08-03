@@ -22,7 +22,7 @@ def get(path, params=None, fName='temp'): # gets data from url, saves to file
     if r.headers['content-type'] == 'application/json':
         return r.json() # parse json responses automatically
 
-    dataFile='illustrisApi/'+fName+'.hdf5'
+    dataFile=fName+'.hdf5'
     # Saves to file, currently disabled
     if 'content-disposition' in r.headers:
         filename = r.headers['content-disposition'].split("filename=")[1]
