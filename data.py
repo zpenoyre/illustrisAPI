@@ -3,17 +3,18 @@ import numpy as np
 import h5py
 
 baseUrl = 'http://www.illustris-project.org/api/'
-with open('./ApiKey.txt') as f:
-    key = f.readlines()[0]
-#key=np.genfromtxt('./ApiKey.txt')
-headers = {"api-key":key}
+headers = {"api-key":"WELLTHISDOESNTSEEMRIGHT"}
     
 # Routine to pull data from online
 def get(path, params=None, fName='temp'): # gets data from url, saves to file
     # make HTTP GET request to path
-    if (len(key)!=32):
-        print('Have you put your API key in ApiKey.txt?')
-        print('Currently it is: ',key)
+    if (len(headers['api-key'])!=32):
+        print("Have you put in your API key? This one isn't working")
+        print('Currently it is: ',headers['api-key'])
+        print('You can find your API key on the Illustris website:')
+        print('http://www.illustris-project.org/data/')
+        print('and update it in this program using')
+        print("PATHTOILLUSTRISAPI/data.headers['api-key']='*MYAPIKEY*'")
     r = requests.get(path, params=params, headers=headers)
     
     # raise exception if response code is not HTTP SUCCESS (200)
