@@ -51,3 +51,5 @@ I'll outline the basic functionality of the commands below:
       
     
 
+      
+The install should be like any other python package, but just in case you're not sure how to do it (I always forget...) dowload it from here, store it wherever you want and add it to your PYTHONPATH (I always fall back on the 2nd comment on this thread - http://www.bdnyc.org/2012/09/editing-pythonpath-to-import-modules/)
