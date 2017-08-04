@@ -49,6 +49,8 @@ An internet connection - I made and tested this package using the free municipal
 
 ______Basic commands:
 I'll outline the basic functionality of the commands below. Note they all default to pulling from the main simulation at z=0 but will work for any simulation and snapshot.
+
+[SEE ALSO](https://github.com/zpenoyre/illustrisAPI/wiki) the wiki for more details!
   
   Object Data - the following commands gets a *dictionary* of data about a particular object: Simulations, Snapshots and Halos/Subhalos
   
