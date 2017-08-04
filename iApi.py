@@ -125,45 +125,20 @@ def getHaloData(whichHalo, simulation='Illustris-1', snapshot=135):
     return haloData
     
 #returns a dictionary with all subhalo catalog data corresponding to a particular subhalo, plus progenitors!
-def getSubhaloData(whichSubhalo, simulation='Illustris-1', snapshot=135, addTree=0):
+def getSubhaloData(whichSubhalo, simulation='Illustris-1', snapshot=135):
     infoUrl='http://www.illustris-project.org/api/'+simulation+'/snapshots/'+str(snapshot)+'/subhalos/'+str(whichSubhalo)+'/info.json'
     infoData=get(infoUrl)
     subhaloData=infoData['Subhalo']
-
-    #tree goes all the way back in time, but only one snapshot forwards (and no merger info).
-    # this is a placeholder for a more robust tree finder, but can be used on z=0 halos to trace the main progenitor branch
-    if addTree==1:
-        subUrl='http://www.illustris-project.org/api/'+simulation+'/snapshots/'+str(snapshot)+'/subhalos/'+str(whichSubhalo)
-        subData=get(subUrl)
-        treeUrl='http://www.illustris-project.org/api/'+simulation+'/snapshots/'+str(snapshot)+'/subhalos/'+str(whichSubhalo)+'/sublink/mpb.hdf5'
-        treeData=get(treeUrl,fName='tempTree')
-        with h5py.File(treeData,'r') as f:
-            treeSubs=f['SubfindID'][:]
-            treeSnaps=f['SnapNum'][:]
-        if (subData['desc_snap'] != -1):
-            treeSnaps=np.insert(treeSnaps,0,subData['desc_snap'])
-            treeSubs=np.insert(treeSubs,0,subData['desc_sfid'])
-        subhaloData['MergerSnapshot']=treeSnaps
-        subhaloData['MergerSubhalos']=treeSubs
-    
     return subhaloData
     
-#returns the merger tree of a specified subhalo at some snapshot (UNFINISHED!)
+#returns the merger tree of a specified subhalo at some snapshot (UNFINISHED! Currently only works for z=0 snapshots!)
 def getTree(whichSubhalo, simulation='Illustris-1', snapshot=135):
     treeUrl='http://www.illustris-project.org/api/'+simulation+'/snapshots/'+str(snapshot)+'/subhalos/'+str(whichSubhalo)+'/sublink/mpb.hdf5'
     treeData=get(treeUrl,fName='tempTree')
     with h5py.File(treeData,'r') as f:
-        rootDesc=f['RootDescendantID'][:]
-        if rootDesc[0]>10000000000000000: #don't ask me why the data does this... annoying quirk
-            rootDesc[0]-=10000000000000000
-        if rootDesc[0]==whichSubhalo:
-            print("This tree breaks before z=0")
-            print('sorry...')
-            return -1
-    rootUrl='http://www.illustris-project.org/api/'+simulation+'/snapshots/135/subhalos/'+str(rootDesc[0])+'/sublink/full.hdf5'
-    rootData=get(rootUrl,fName='tempTree')
-    with h5py.File(rootData,'r') as f:
-        return f
+        treeSubs=f['SubfindID'][:]
+        treeSnaps=f['SnapNum'][:]
+    return treeSnaps,treeSubs
     
 #returns relevant details for a particular snapshot
 def getSnapData(snapshot=135,simulation='Illustris-1'):
