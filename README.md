@@ -69,6 +69,7 @@ I'll outline the basic functionality of the commands below. Note they all defaul
     getGalaxy(whichGalaxy, fields, simulation='Illustris-1', snapshot=135)
     
   And finally there's the get(path, ...) command. This is doing the actual pulling from online, you hopefully won't need to touch it.
+  P.s. there's also a half built getTree function to trace a galaxy back through time. Check the wiki for more details!
     
 ______Installation:
       
