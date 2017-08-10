@@ -156,19 +156,43 @@ def getSnapData(snapshot=135,simulation='Illustris-1'):
     data['NumHalos']=snapData['num_groups_fof']
     data['NumSubhalos']=snapData['num_groups_subfind']
     return data
-    
+ 
 #returns relevant details for a particular simulation
-def getSimData(simulation='Illustris-1'):
+def getSimData(simulation='Illustris-1',getRedshifts=1):
     simUrl='http://www.illustris-project.org/api/'+simulation+'/'
     simData=get(simUrl)
     #could add table of snapshots, redshifts and times
     data={'Simulation':simulation}
     data['BoxSize']=simData['boxsize']
+    h=simData['hubble']
     data['h']=simData['hubble']
     data['Omega_0']=simData['omega_0']
     data['Omega_L']=simData['omega_L']
     data['Omega_B']=simData['omega_B']
     data['MassDM']=simData['mass_dm']
     data['MassGas']=simData['mass_gas']
+    
+    if getRedshifts==1: # get a list of the redshifts, cosmic time and scale factor of each snapshots
+        from scipy import integrate #needed for numerical inetgration to get t(z)
+        H0=100*data['h']
+        omM=data['Omega_0']+data['Omega_B']
+        omL=data['Omega_L']
+        def tInt(a):
+            return 1/(H0*a*np.sqrt(omL + omM*a**-3))
+        
+        nSnapshots=simData['num_snapshots']
+        snapshotsUrl=simUrl+'snapshots/'
+        snapshotsData=get(snapshotsUrl)
+        finalSnapshot=snapshotsData[-1]['number'] # may be larger than nSnapshots if there are corrupted files
+        snapshots=-np.ones((finalSnapshot+1,4)) #corrupted snapshots will have -1's in redshift, scale factor and time
+        snapshots[:,0]=np.arange(0,finalSnapshot+1)
+        for i in range(nSnapshots):
+            thisSnap=snapshotsData[i]['number'] #note, sometimes a sim may skip a snapshot
+            z=snapshotsData[i]['redshift']
+            snapshots[thisSnap,1]=z
+            a=1/(1+z)
+            snapshots[thisSnap,2]=a
+            snapshots[thisSnap,3]=integrate.quad(tInt,0,a)[0] #NOT THE SAME AS ON THE ILLUSTRIS WEBSITE (no idea why not tho...)
+        data['Redshifts']=snapshots
     return data
 
