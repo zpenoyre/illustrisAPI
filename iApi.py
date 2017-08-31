@@ -1,6 +1,7 @@
 import requests
 import numpy as np
 import h5py
+import changeUnits
 
 baseUrl = 'http://www.illustris-project.org/api/'
 headers = {"api-key":"WELLTHISDOESNTSEEMRIGHT"}
@@ -14,7 +15,8 @@ def get(path, params=None, fName='temp'): # gets data from url, saves to file
         print('You can find your API key on the Illustris website:')
         print('http://www.illustris-project.org/data/')
         print('and update it in this program using')
-        print("PATHTOILLUSTRISAPI/data.headers['api-key']='*MYAPIKEY*'")
+        print("iApi.headers['api-key']='*MYAPIKEY*'")
+        print("Or permanently change it in iApi.py")
     r = requests.get(path, params=params, headers=headers)
     
     # raise exception if response code is not HTTP SUCCESS (200)
@@ -84,12 +86,15 @@ def getGalaxy(whichGalaxy, fields, # index of a galaxy and the 2d list of fields
     if rewriteFile == 0: # if we're not redownloading need to set path to the file
         dataFile=fileName+'.hdf5'
     
+    # gets a dictionary for unit conversions
+    units=changeUnits.makeParticleDict(simulation=simulation,snapshot=snapshot)
+    
     # actually get the data (saved to .hdf5 file)
     data=[] # initially empty list that we will fill up with the data
     with h5py.File(dataFile,'r') as f:
         for i in range(disorder.size):
             thisField=fields[disorder[i],:] # ensures data returned in original order of fields
-            data.append(np.array(f['PartType'+thisField[0]][thisField[1]]))
+            data.append(units[thisField[1]]*np.array(f['PartType'+thisField[0]][thisField[1]]))
             # returns all particle data of each field as a numpy array
     return data # returns all the particle fields as a list of numpy arrays in the same order as initial fields
 
@@ -103,7 +108,8 @@ def getSubhaloField(field,simulation='Illustris-1',snapshot=135,fileName='tempCa
         
     with h5py.File(dataFile,'r') as f:
         data=np.array(f['Subhalo'][field])
-    return data
+    units=changeUnits.makeSubhaloDict(simulation=simulation,snapshot=snapshot)
+    return data*units[field]
     
 # data from one field for all halos in a given snapshot    
 def getHaloField(field,simulation='Illustris-1',snapshot=135,fileName='tempCat',rewriteFile=1):
@@ -115,20 +121,33 @@ def getHaloField(field,simulation='Illustris-1',snapshot=135,fileName='tempCat',
         
     with h5py.File(dataFile,'r') as f:
         data=np.array(f['Group'][field])
-    return data
+    units=changeUnits.makeHaloDict(simulation=simulation,snapshot=snapshot)
+    return data*units[field]
     
 #returns a dictionary with all halo catalog data corresponding to a particular halo
 def getHaloData(whichHalo, simulation='Illustris-1', snapshot=135):
+    units=changeUnits.makeHaloDict(simulation=simulation,snapshot=snapshot)
     url='http://www.illustris-project.org/api/'+simulation+'/snapshots/'+str(snapshot)+'/halos/'+str(whichHalo)+'/info.json'
     data=get(url)
     haloData=data['Group']
+    haloKeys=list(haloData.keys())
+    for i in range(len(haloKeys)):
+        oldValue=np.array(haloData[haloKeys[i]])
+        convFactor=units[haloKeys[i]]
+        haloData[haloKeys[i]]=convFactor*oldValue
     return haloData
     
 #returns a dictionary with all subhalo catalog data corresponding to a particular subhalo, plus progenitors!
 def getSubhaloData(whichSubhalo, simulation='Illustris-1', snapshot=135):
+    units=changeUnits.makeSubhaloDict(simulation=simulation,snapshot=snapshot)
     infoUrl='http://www.illustris-project.org/api/'+simulation+'/snapshots/'+str(snapshot)+'/subhalos/'+str(whichSubhalo)+'/info.json'
     infoData=get(infoUrl)
     subhaloData=infoData['Subhalo']
+    subhaloKeys=list(subhaloData.keys())
+    for i in range(len(subhaloKeys)):
+        oldValue=np.array(subhaloData[subhaloKeys[i]])
+        convFactor=units[subhaloKeys[i]]
+        subhaloData[subhaloKeys[i]]=convFactor*oldValue
     return subhaloData
     
 #returns the merger tree of a specified subhalo at some snapshot (UNFINISHED! Currently only works for z=0 snapshots!)
@@ -196,3 +215,7 @@ def getSimData(simulation='Illustris-1',getRedshifts=1):
         data['Redshifts']=snapshots
     return data
 
+#tells the unit conversion routine which units we want
+def setUnits(unitScheme):
+    changeUnits.setUnits(unitScheme)
+    
