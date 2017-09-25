@@ -151,13 +151,21 @@ def getSubhaloData(whichSubhalo, simulation='Illustris-1', snapshot=135):
     return subhaloData
     
 #returns the merger tree of a specified subhalo at some snapshot (UNFINISHED! Currently only works for z=0 snapshots!)
-def getTree(whichSubhalo, simulation='Illustris-1', snapshot=135):
+def oldGetTree(whichSubhalo, simulation='Illustris-1', snapshot=135):
     treeUrl='http://www.illustris-project.org/api/'+simulation+'/snapshots/'+str(snapshot)+'/subhalos/'+str(whichSubhalo)+'/sublink/mpb.hdf5'
     treeData=get(treeUrl,fName='tempTree')
     with h5py.File(treeData,'r') as f:
         treeSubs=f['SubfindID'][:]
         treeSnaps=f['SnapNum'][:]
     return treeSnaps,treeSubs
+    
+#returns the merger tree of a specified subhalo at some snapshot
+def getTree(whichSubhalo, simulation='Illustris-1', snapshot=135):
+    treeUrl='http://www.illustris-project.org/api/'+simulation+'/snapshots/'+str(snapshot)+'/subhalos/'+str(whichSubhalo)+'/sublink/simple.json'
+    treeData=get(treeUrl)
+    treeData['Main']=np.array(treeData['Main']) #don't know why these are lists but numpy arrays seem more useful
+    treeData['Mergers']=np.array(treeData['Mergers'])
+    return treeData
     
 #returns relevant details for a particular snapshot
 def getSnapData(snapshot=135,simulation='Illustris-1'):
