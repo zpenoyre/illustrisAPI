@@ -1,7 +1,9 @@
 # illustrisAPI
 tools to make accessing (all) Illustris data simple, using just a laptop and an internet connection
 
-** I'm in the process of moving everything to the [WIKI](https://github.com/zpenoyre/illustrisAPI/wiki). Any information here should be in clearer format there. Leaving this up for my own reference. **
+__________________________________________________________________________
+** EVERYTHING (and more) on this page is now on the [WIKI](https://github.com/zpenoyre/illustrisAPI/wiki). START THERE! I'm leaving this up for my own reference. **
+__________________________________________________________________________
 
 The basic philosophy of these tools is this:
   anyone with a computer, an internet connection, can access (basically) all of the Illustris data quickly and easily.
