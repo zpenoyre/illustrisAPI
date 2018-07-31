@@ -66,7 +66,7 @@ def get(path, params=None, fName='temp'): # gets data from url, saves to file
 
 
 def getGalaxy(whichGalaxy, fields, simulation='Illustris-1', snapshot=135,
-        fileName='tempGal',rewriteFile=1, getHalo=0):
+              fileName='tempGal', rewriteFile=1, getHalo=0):
         
     """
     Pulls particle data for a particular galaxy for a list of specified fields
@@ -214,7 +214,8 @@ def getGalaxy(whichGalaxy, fields, simulation='Illustris-1', snapshot=135,
     return data # returns all the particle fields as a list of numpy arrays in the same order as initial fields
 
 
-def getSubhaloField(field,simulation='Illustris-1',snapshot=135,fileName='tempCat',rewriteFile=1):
+def getSubhaloField(field, simulation='Illustris-1', snapshot=135,
+                    fileName='tempCat', rewriteFile=1):
     """
     Data from one field for all subhalos in a given snapshot      
     
@@ -298,7 +299,8 @@ def getSubhaloField(field,simulation='Illustris-1',snapshot=135,fileName='tempCa
     return data*units[field]
     
   
-def getHaloField(field,simulation='Illustris-1',snapshot=135,fileName='tempCat',rewriteFile=1):
+def getHaloField(field, simulation='Illustris-1', snapshot=135,
+                 fileName='tempCat', rewriteFile=1):
     """
     Data from one field for all halos/subhalos in a given snapshot      
     
@@ -428,10 +430,10 @@ def getHaloData(whichHalo, simulation='Illustris-1', snapshot=135):
     return haloData
     
     
-#returns a dictionary with all subhalo catalog data corresponding to a particular subhalo, plus progenitors!
+
 def getSubhaloData(whichSubhalo, simulation='Illustris-1', snapshot=135):
     """
-    Returns a dictionary with all catalog data corresponding to a halo or subhalo
+    Returns subhalo data for a particular subhalo, plus progenitors!
     
     Docstring is identical for `getHaloData`and `getSubhaloData`
     
@@ -507,7 +509,7 @@ def getTree(whichSubhalo, simulation='Illustris-1', snapshot=135):
     return treeData
     
 
-def getSnapData(snapshot=135,simulation='Illustris-1'):
+def getSnapData(snapshot=135, simulation='Illustris-1'):
     """
     Returns relevant details for a particular snapshot
     
@@ -547,7 +549,7 @@ def getSnapData(snapshot=135,simulation='Illustris-1'):
     return data
  
 #returns relevant details for a particular simulation
-def getSimData(simulation='Illustris-1',getRedshifts=1):
+def getSimData(simulation='Illustris-1', getRedshifts=1):
     """
     Returns relevant details for a particular simulation
     
@@ -578,7 +580,6 @@ def getSimData(simulation='Illustris-1',getRedshifts=1):
         
     """
 
-
     simUrl='http://www.illustris-project.org/api/'+simulation+'/'
     simData=get(simUrl)
     #could add table of snapshots, redshifts and times
@@ -597,6 +598,7 @@ def getSimData(simulation='Illustris-1',getRedshifts=1):
         H0=100*data['h']
         omM=data['Omega_0']+data['Omega_B']
         omL=data['Omega_L']
+        
         def tInt(a):
             return 1/(H0*a*np.sqrt(omL + omM*a**-3))
         
