@@ -3,11 +3,40 @@ import numpy as np
 import h5py
 import changeUnits
 
+users_api_key = "83e79a727bdc1a445cea4b9bb9335faa"
+
 baseUrl = 'http://www.illustris-project.org/api/'
-headers = {"api-key":"WELLTHISDOESNTSEEMRIGHT"}
+headers = {"api-key" : users_api_key}
+
+
+def update_api_key(api_key):
+    """
+    Add or change the API key used by this module
     
-# Routine to pull data from online
+    Parameters
+    ----------
+    api_key : str
+        Your API key for the illustris databank
+    
+    """
+    
+    global headers
+    users_api_key = api_key
+    headers = {"api-key" : users_api_key}
+
+
+def setUnits(unitScheme):
+    """
+    Tells the unit conversion routine which units we want
+    """
+    changeUnits.setUnits(unitScheme)
+    
+    
 def get(path, params=None, fName='temp'): # gets data from url, saves to file
+    """
+    Routine to pull data from online
+    """
+    
     # make HTTP GET request to path
     if (len(headers['api-key'])!=32):
         print("Have you put in your API key? This one isn't working")
@@ -34,15 +63,100 @@ def get(path, params=None, fName='temp'): # gets data from url, saves to file
         return dataFile # return the filename string
 
     return r
+
+
+def getGalaxy(whichGalaxy, fields, simulation='Illustris-1', snapshot=135,
+              fileName='tempGal', rewriteFile=1, getHalo=0):
+        
+    """
+    Pulls particle data for a particular galaxy for a list of specified fields
     
-# For a chosen galaxy pulls out all the particle data for a set of fields
-particleTypeNames=['gas','dm','error','tracers','stars','bhs'] 
-def getGalaxy(whichGalaxy, fields, # index of a galaxy and the 2d list of fields (particle type and name of fields)
-        simulation='Illustris-1', snapshot=135, # which simulation and snapshot
-        fileName='tempGal',rewriteFile=1, # name of the file where .hdf5 data is stored and whether to rewrite or just read
-        getHalo=0): # can also pull out all data from halo (rather than subhalo) BIG!
+    This pulls particle data for a particular galaxy for a list of specified 
+    fields and particle types. To be more exact it downloads, opens and returns 
+    data from a hdf5 file.
+
+    Parameters
+    ----------
+    whichGalaxy : int
+        The subhalo number (SubfindId to be exact) of the galaxy
+
+    fields : list
+        List of fields to be returned. Can have as many entries as wanted but 
+        must be in the specified format. For each desired field (e.g. positions 
+        of stars) you must specify a particle type and desired field. The 
+        particle types are labelled by the numbers 0 through 5
+
+        0. Gas
+        1. Dark matter
+        2. Empty (don't ask)
+        3. Tracers (if you don't know what this means you probably can ignore it)
+        4. Stars
+        5. Black holes (bear in mind a galaxy may have none)
+        The fields can be found in section 1. of this page. 
+        http://www.illustris-project.org/data/docs/specifications/
+        See below for an example
+
+    simulation : str
+        Which simulation to pull data from
+
+    snapshot : int
+        Which snapshot (moment in time) to pull data from
+
+    getHalo : int
+        [0 or 1] Instead of pulling all the data in a subhalo you can set this 
+        to 1 to get all particle data in a halo. Roughly speaking a galaxy is 
+        synonymous with a subhalo and a cluster with a halo (don't ask me) so 
+        the data may be large!
+
+    fileName : str
+        Default is 'tempGal.hdf5'. Filename for where to store or load the data 
+
+    rewriteFile : int
+        [0 or 1] If this is equal to 0 then the program will try and pull data 
+        from the file specified by fileName rather than re-downloading. This can 
+        save time, especially for galaxies which are large or you will work on 
+        frequently, but you will only be able to access fields you originally 
+        requested
+
     
+    Returns
+    -------
+    data : list
+        A list of numpy arrays, each one containing the data for a specific 
+        field for all particles of a given type, in the order of fields
+
     
+    Examples
+    --------
+    Let's pull out the stellar masses, positions, velocities and gas coordinates 
+    and temperatures for particles in a galaxy at redshift z=1 (snapshot 85) 
+    in illustris 3
+
+    Define the fields we want
+    
+        >>> fields=[
+        [4,'Masses'], # star mass (N_star values)
+        [4,'Coordinates'], # star position (N_star x 3 values)
+        [4,'Velocities'], # star velocity (N_star x 3 values)
+        [0,'Coordinates'], # gas position (N_gas x 3 values)
+        [0,'InternalEnergy'] # gas temperature, after a simple conversion (N_gas x 3 values)
+        ]
+        
+    
+    Get the data
+    
+        >>> galaxyData=iApi.getGalaxy(100, fields, simulation='Illustris-3', snapshot=85)
+
+    Split the data into seperate numpy arrays
+
+        >>> mStar=galaxyData[0][:]
+        >>> rStar=galaxyData[1][:,:] #don't forget this is a 2d array
+        >>> vStar=galaxyData[2][:,:]
+        >>> rGas=galaxyData[3][:,:]
+        >>> uGas=galaxyData[4][:]
+    
+    """
+        
     fields=np.array(fields) # converts to array
     order=np.argsort(fields[:,0])
     disorder=np.argsort(order) # needed to unsort the fields later...
@@ -66,6 +180,7 @@ def getGalaxy(whichGalaxy, fields, # index of a galaxy and the 2d list of fields
                 firstParticle=0
             else: # all later particles do
                 url+='&' 
+            particleTypeNames=['gas','dm','error','tracers','stars','bhs']                 
             url+=particleTypeNames[thisParticle]+'=' # adds the name of the particle type
         
             firstEntry=1
@@ -98,8 +213,80 @@ def getGalaxy(whichGalaxy, fields, # index of a galaxy and the 2d list of fields
             # returns all particle data of each field as a numpy array
     return data # returns all the particle fields as a list of numpy arrays in the same order as initial fields
 
-# data from one field for all subhalos in a given snapshot  
-def getSubhaloField(field,simulation='Illustris-1',snapshot=135,fileName='tempCat',rewriteFile=1):
+
+def getSubhaloField(field, simulation='Illustris-1', snapshot=135,
+                    fileName='tempCat', rewriteFile=1):
+    """
+    Data from one field for all subhalos in a given snapshot      
+    
+    These two commands are near identical, so I'm going to detail them both here. 
+    They have the same input and output, except one deals with halos (roughly 
+    speaking 'groups/ clusters') and the other with the subhalos in those halos 
+    (the 'galaxies' in those 'groups'). See Intro to the Data (or Naming 
+    Conventions) for more on the data structure/ naming conventions used.
+    
+    
+    Parameters
+    ----------
+    field : str
+        Name of the one field to be returned. The fields can be found in 
+        section 2. of this page
+        http://www.illustris-project.org/data/docs/specifications/
+
+    simulation : str
+        Which simulation to pull data from
+
+    snapshot : int
+        Which snapshot (moment in time) to pull data from
+
+    The following two parameters are discussed in more detail here!
+
+    fileName : str
+        Default is 'tempGal.hdf5'. Filename for where to store or load the data 
+
+    rewriteFile : int
+        [0 or 1] If this is equal to 0 then the program will try and pull data 
+        from the file specified by fileName rather than re-downloading. This can 
+        save time, especially for galaxies which are large or you will work on 
+        frequently, but you will only be able to access fields you originally 
+        requested
+        
+        
+    Returns
+    -------
+    data : array
+        A numpy array containing the data for a specific field for all halos/subhalos
+
+        
+    Examples
+    --------
+    Let's pull out the velocity dispersion of stars in every subhalo and their 
+    DM mass, and then restrict ourselves to only looking at the primary subhalo 
+    in each halo (i.e. the most massive galaxy in each group).
+
+    The velocity dispersion (N_sub values)
+    
+        >>> galaxyVelDisp=iApi.getSubhaloField('SubhaloVelDisp')
+
+    The mass of each different particle type in a galaxy (N_sub x 6 values, 
+    see getGalaxyData for more info on particle types)
+    
+        >>> galaxyMassType=iApi.getSubhaloField('SubhaloMassType') 
+
+    The subhalo number of the primary subhalo in each halo (N_halo values)
+        
+        >>> primarySubhalos=iApi.getHaloField('GroupFirstSub') 
+
+    Velocity dispersion of primary subhalos
+    
+        >>> velDisp=galaxyVelDisp[primarySubhalos]
+
+    Total dark matter mass of primary subhalos 
+    
+        >>> mDM=galaxyMassType[primarySubhalos,1] 
+    
+    """
+    
     if rewriteFile==1: # redownloads file from the internet
         url='http://www.illustris-project.org/api/'+simulation+'/files/groupcat-'+str(snapshot)+'/?Subhalo='+field
         dataFile=get(url,fName=fileName)
@@ -111,8 +298,80 @@ def getSubhaloField(field,simulation='Illustris-1',snapshot=135,fileName='tempCa
     units=changeUnits.makeSubhaloDict(simulation=simulation,snapshot=snapshot)
     return data*units[field]
     
-# data from one field for all halos in a given snapshot    
-def getHaloField(field,simulation='Illustris-1',snapshot=135,fileName='tempCat',rewriteFile=1):
+  
+def getHaloField(field, simulation='Illustris-1', snapshot=135,
+                 fileName='tempCat', rewriteFile=1):
+    """
+    Data from one field for all halos/subhalos in a given snapshot      
+    
+    These two commands are near identical, so I'm going to detail them both here. 
+    They have the same input and output, except one deals with halos (roughly 
+    speaking 'groups/ clusters') and the other with the subhalos in those halos 
+    (the 'galaxies' in those 'groups'). See Intro to the Data (or Naming 
+    Conventions) for more on the data structure/ naming conventions used.
+    
+    
+    Parameters
+    ----------
+    field : str
+        Name of the one field to be returned. The fields can be found in 
+        section 2. of this page
+        http://www.illustris-project.org/data/docs/specifications/
+
+    simulation : str
+        Which simulation to pull data from
+
+    snapshot : int
+        Which snapshot (moment in time) to pull data from
+
+    The following two parameters are discussed in more detail here!
+
+    fileName : str
+        Default is 'tempGal.hdf5'. Filename for where to store or load the data 
+
+    rewriteFile : int
+        [0 or 1] If this is equal to 0 then the program will try and pull data 
+        from the file specified by fileName rather than re-downloading. This can 
+        save time, especially for galaxies which are large or you will work on 
+        frequently, but you will only be able to access fields you originally 
+        requested
+        
+        
+    Returns
+    -------
+    data : array
+        A numpy array containing the data for a specific field for all halos/subhalos
+
+        
+    Examples
+    --------
+    Let's pull out the velocity dispersion of stars in every subhalo and their 
+    DM mass, and then restrict ourselves to only looking at the primary subhalo 
+    in each halo (i.e. the most massive galaxy in each group).
+
+    The velocity dispersion (N_sub values)
+    
+        >>> galaxyVelDisp=iApi.getSubhaloField('SubhaloVelDisp')
+
+    The mass of each different particle type in a galaxy (N_sub x 6 values, 
+    see getGalaxyData for more info on particle types)
+    
+        >>> galaxyMassType=iApi.getSubhaloField('SubhaloMassType') 
+
+    The subhalo number of the primary subhalo in each halo (N_halo values)
+        
+        >>> primarySubhalos=iApi.getHaloField('GroupFirstSub') 
+
+    Velocity dispersion of primary subhalos
+    
+        >>> velDisp=galaxyVelDisp[primarySubhalos]
+
+    Total dark matter mass of primary subhalos 
+    
+        >>> mDM=galaxyMassType[primarySubhalos,1] 
+    
+    """
+    
     if rewriteFile==1: # redownloads file from the internet
         url='http://www.illustris-project.org/api/'+simulation+'/files/groupcat-'+str(snapshot)+'/?Group='+field
         dataFile=get(url,fName=fileName)
@@ -124,8 +383,41 @@ def getHaloField(field,simulation='Illustris-1',snapshot=135,fileName='tempCat',
     units=changeUnits.makeHaloDict(simulation=simulation,snapshot=snapshot)
     return data*units[field]
     
-#returns a dictionary with all halo catalog data corresponding to a particular halo
+
 def getHaloData(whichHalo, simulation='Illustris-1', snapshot=135):
+    """
+    Returns a dictionary with all catalog data corresponding to a halo or subhalo
+    
+    Docstring is identical for `getHaloData`and `getSubhaloData`
+    
+    These two commands are effectively identical. They have the same input and 
+    output, except one deals with halos (roughly speaking 'groups/ clusters') 
+    and the other with the subhalos in those halos (the 'galaxies' in those 
+    'groups'). See Intro to the Data (or Naming Conventions) for more on the 
+    data structure/ naming conventions used.
+
+    Parameters
+    ----------
+    whichHalo : int
+        halo/subhalo number of the galaxy you wish to get data for
+
+    simulation : str
+        Which simulation to pull data from
+
+    snapshot : int
+        Which snapshot (moment in time) to pull data from
+
+        
+    Returns
+    -------
+    data : dict
+        A dictionary of data, with an entry for each field (with field names 
+        from section 2. of this page
+        http://www.illustris-project.org/data/docs/specifications/
+        
+    
+    """
+
     units=changeUnits.makeHaloDict(simulation=simulation,snapshot=snapshot)
     url='http://www.illustris-project.org/api/'+simulation+'/snapshots/'+str(snapshot)+'/halos/'+str(whichHalo)+'/info.json'
     data=get(url)
@@ -137,8 +429,41 @@ def getHaloData(whichHalo, simulation='Illustris-1', snapshot=135):
         haloData[haloKeys[i]]=convFactor*oldValue
     return haloData
     
-#returns a dictionary with all subhalo catalog data corresponding to a particular subhalo, plus progenitors!
+    
+
 def getSubhaloData(whichSubhalo, simulation='Illustris-1', snapshot=135):
+    """
+    Returns subhalo data for a particular subhalo, plus progenitors!
+    
+    Docstring is identical for `getHaloData`and `getSubhaloData`
+    
+    These two commands are effectively identical. They have the same input and 
+    output, except one deals with halos (roughly speaking 'groups/ clusters') 
+    and the other with the subhalos in those halos (the 'galaxies' in those 
+    'groups'). See Intro to the Data (or Naming Conventions) for more on the 
+    data structure/ naming conventions used.
+
+    Parameters
+    ----------
+    whichSubhalo : int
+        halo/subhalo number of the galaxy you wish to get data for
+
+    simulation : str
+        Which simulation to pull data from
+
+    snapshot : int
+        Which snapshot (moment in time) to pull data from
+
+        
+    Returns
+    -------
+    data : dict
+        A dictionary of data, with an entry for each field (with field names 
+        from section 2. of this page
+        http://www.illustris-project.org/data/docs/specifications/
+
+    """
+
     units=changeUnits.makeSubhaloDict(simulation=simulation,snapshot=snapshot)
     infoUrl='http://www.illustris-project.org/api/'+simulation+'/snapshots/'+str(snapshot)+'/subhalos/'+str(whichSubhalo)+'/info.json'
     infoData=get(infoUrl)
@@ -150,16 +475,64 @@ def getSubhaloData(whichSubhalo, simulation='Illustris-1', snapshot=135):
         subhaloData[subhaloKeys[i]]=convFactor*oldValue
     return subhaloData
     
-#returns the merger tree of a specified subhalo at some snapshot
+
 def getTree(whichSubhalo, simulation='Illustris-1', snapshot=135):
+    """
+    Returns the merger tree of a specified subhalo at some snapshot    
+    
+    
+    Parameters
+    ----------
+    whichSubhalo : int
+        halo/subhalo number of the galaxy you wish to get data for
+
+    simulation : str
+        Which simulation to pull data from
+
+    snapshot : int
+        Which snapshot (moment in time) to pull data from
+    
+    
+    Returns
+    -------
+    treeData : dict
+        Returns a dict with the Subhalo index numbers for the main subhalo for
+        each snapshot and also the indexes of halos which mergers with the main
+        subhalo during the time since the last snapshot
+    
+    """
+
     treeUrl='http://www.illustris-project.org/api/'+simulation+'/snapshots/'+str(snapshot)+'/subhalos/'+str(whichSubhalo)+'/sublink/simple.json'
     treeData=get(treeUrl)
     treeData['Main']=np.array(treeData['Main']) #don't know why these are lists but numpy arrays seem more useful
     treeData['Mergers']=np.array(treeData['Mergers'])
     return treeData
     
-#returns relevant details for a particular snapshot
-def getSnapData(snapshot=135,simulation='Illustris-1'):
+
+def getSnapData(snapshot=135, simulation='Illustris-1'):
+    """
+    Returns relevant details for a particular snapshot
+    
+    Returns a dictionary of data for a particular snap. Useful for finding the 
+    number of particles of various types, and number of halos/subhalos. 
+    Also includes the redshift.
+    
+    
+    Parameters
+    ----------
+    simulation : str
+        Which simulation to pull data from
+
+    snapshot : int
+        Which snapshot (moment in time) to pull data from
+        
+        
+    Returns
+    -------
+    data : dict
+        
+    """
+    
     snapUrl='http://www.illustris-project.org/api/'+simulation+'/snapshots/'+str(snapshot)+'/'
     snapData=get(snapUrl)
     data={'Simulation':simulation}
@@ -176,7 +549,37 @@ def getSnapData(snapshot=135,simulation='Illustris-1'):
     return data
  
 #returns relevant details for a particular simulation
-def getSimData(simulation='Illustris-1',getRedshifts=1):
+def getSimData(simulation='Illustris-1', getRedshifts=1):
+    """
+    Returns relevant details for a particular simulation
+    
+    Returns a dictionary of data about a particular simulation. This includes 
+    cosmological parameters and the box size. If getRedshifts==1 then it will 
+    also find and return a list of snapshot numbers and their associated 
+    redshift, scale factor and time. THIS REQUIRES SCIPY for the numerical 
+    integration.
+
+    NOTE: These units are not converted! They are given in 10^10 M_sun/h, Gyr 
+    and comoving kpc/h (which can be converted by dividing by 'h' and box length 
+    converted to physical coordinates by multiplying by the scalefactor at a 
+    given snapshot)
+    
+    
+    Parameters
+    ----------
+    simulation : str
+        Which simulation to pull data from
+
+    snapshot : int
+        Which snapshot (moment in time) to pull data from
+        
+        
+    Returns
+    -------
+    data : dict
+        
+    """
+
     simUrl='http://www.illustris-project.org/api/'+simulation+'/'
     simData=get(simUrl)
     #could add table of snapshots, redshifts and times
@@ -195,6 +598,7 @@ def getSimData(simulation='Illustris-1',getRedshifts=1):
         H0=100*data['h']
         omM=data['Omega_0']+data['Omega_B']
         omL=data['Omega_L']
+        
         def tInt(a):
             return 1/(H0*a*np.sqrt(omL + omM*a**-3))
         
@@ -213,8 +617,3 @@ def getSimData(simulation='Illustris-1',getRedshifts=1):
             snapshots[thisSnap,3]=integrate.quad(tInt,0,a)[0] #NOT THE SAME AS ON THE ILLUSTRIS WEBSITE (no idea why not tho...)
         data['Redshifts']=snapshots
     return data
-
-#tells the unit conversion routine which units we want
-def setUnits(unitScheme):
-    changeUnits.setUnits(unitScheme)
-    
