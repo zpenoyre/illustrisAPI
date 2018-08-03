@@ -3,10 +3,8 @@ import numpy as np
 import h5py
 import changeUnits
 
-users_api_key = "83e79a727bdc1a445cea4b9bb9335faa"
-
 baseUrl = 'http://www.illustris-project.org/api/'
-headers = {"api-key" : users_api_key}
+headers = {"api-key" : "WELLTHISDOESNTSEEMRIGHT"}
 
 
 def update_api_key(api_key):
